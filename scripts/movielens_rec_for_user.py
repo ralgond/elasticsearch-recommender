@@ -15,8 +15,8 @@ es = Elasticsearch()
 
 movie = es.get(index="users", id=userId)
 
-model_factor = movie['_source']["model_factor"]
-
+model_factor = movie['_source']['model_factor']
+rate_history = movie['_source']['rate_history']
 
 def vector_query(query_vec, vector_field, q="*", cosine=False):
     if cosine:
@@ -30,8 +30,12 @@ def vector_query(query_vec, vector_field, q="*", cosine=False):
     "query": {
         "script_score": {
             "query" : { 
-                "query_string": {
-                    "query": q
+                "bool": {
+                    "must_not": {
+                        "terms": {
+                            "_id": rate_history
+                        }
+                    }
                 }
             },
             "script": {
@@ -49,6 +53,8 @@ print(q)
 print("")
 
 results = es.search(index="movies", body=q)
+print("took: "+str(results['took'])+"ms")
+print("")
 movie_list = results['hits']['hits']
 for m in movie_list:
     print(m['_source']['movieName'])
