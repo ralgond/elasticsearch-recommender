@@ -18,11 +18,9 @@ movie = es.get(index="movies", id=movieId)
 model_factor = movie['_source']["model_factor"]
 
 
-def vector_query(query_vec, vector_field, q="*", cosine=False):
-    if cosine:
-        score_fn = "doc['{v}'].size() == 0 ? 0 : cosineSimilarity(params.vector, '{v}') + 1.0"
-    else:
-        score_fn = "doc['{v}'].size() == 0 ? 0 : sigmoid(1, Math.E, -dotProduct(params.vector, '{v}'))"
+def vector_query(movieId, query_vec, vector_field, q="*"):
+
+    score_fn = "doc['{v}'].size() == 0 ? 0 : cosineSimilarity(params.vector, '{v}') + 1.0"
        
     score_fn = score_fn.format(v=vector_field, fn=score_fn)
     
@@ -30,8 +28,12 @@ def vector_query(query_vec, vector_field, q="*", cosine=False):
     "query": {
         "script_score": {
             "query" : { 
-                "query_string": {
-                    "query": q
+                "bool": {
+                    "must_not": {
+                        "term": {
+                            "_id": movieId
+                        }
+                    }
                 }
             },
             "script": {
@@ -44,7 +46,7 @@ def vector_query(query_vec, vector_field, q="*", cosine=False):
     }
     }
 
-q = vector_query(model_factor, "model_factor", q="*", cosine=True)
+q = vector_query(movieId, model_factor, "model_factor", q="*")
 print(q)
 print("")
 
